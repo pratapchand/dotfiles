@@ -4,3 +4,9 @@
 [submodule "tmux/plugins/tmux-battery"]
 	path = tmux/plugins/tmux-battery
 	url = https://github.com/tmux-plugins/tmux-battery.git
+[submodule "vim/vimux"]
+	path = vim/vimux
+	url = https://github.com/benmills/vimux.git
+[submodule "vim/plugin/vimux"]
+	path = vim/plugin/vimux
+	url = https://github.com/benmills/vimux.git

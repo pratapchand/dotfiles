@@ -35,3 +35,18 @@ map P :TlistToggle<CR>
 autocmd FileType python set omnifunc=pythoncomplete#Complete
 set runtimepath^=~/.vim/bundle/ctrlp.vim
 let g:netrw_liststyle=3
+nnoremap <leader>. :CtrlPTag<cr>
+
+autocmd FileType java set tags=~/.tags
+
+let VimuxUseNearestPane = 1
+nnoremap <Leader>vp :VimuxPromptCommand<CR>
+nnoremap <Leader>vl :VimuxRunLastCommand<CR>
+nnoremap <Leader>vi :VimuxInspectRunner<CR>
+nnoremap <Leader>vq :VimuxCloseRunner<CR>
+nnoremap <Leader>vk :VimuxInterruptRunner<CR>
+nnoremap <Leader>vc :VimuxClearRunnerHistory<CR>
+vnoremap <LocalLeader>vs "vy :call VimuxRunCommand(@v . "\n", 0)<CR>
+nnoremap <LocalLeader>vs vip<LocalLeader>vs<CR>
+
+autocmd BufRead *.java set efm=%A\ %#[javac]\ %f:%l:\ %m,%-Z\ %#[javac]\ %p^,%-C%.%#
