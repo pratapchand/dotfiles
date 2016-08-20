@@ -1,6 +1,5 @@
-
 # Path to your oh-my-zsh installation.
-export ZSH=/Users/pchand/dotfiles/zsh
+export ZSH=~/.zsh
 
 # Set name of the theme to load.
 # Look in ~/.oh-my-zsh/themes/
@@ -58,11 +57,6 @@ plugins=(git tmux)
 
 # User configuration
 
-# MacPorts Installer addition on 2014-05-05_at_16:00:09: adding an appropriate PATH variable for use with MacPorts.
-export PATH=/opt/local/bin:/opt/local/sbin:/usr/local/bin:$PATH
-# Finished adapting your PATH environment variable for use with MacPorts.
-
-export PATH=$PATH:"/Users/pchand/.rvm/gems/ruby-2.2.1/bin:/Users/pchand/.rvm/gems/ruby-2.2.1@global/bin:/Users/pchand/.rvm/rubies/ruby-2.2.1/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Users/pchand/.rvm/bin"
 # export MANPATH="/usr/local/man:$MANPATH"
 
 source $ZSH/oh-my-zsh.sh
@@ -72,15 +66,8 @@ if [ "$(boot2docker status)" != 'running' ]; then
 fi
 $(boot2docker shellinit)
 
-export ORACLE_HOME=/Users/pchand/oracle/instantclient_11_2
-export CPATH=/Users/pchand/oracle/instantclient_11_2
-export TNS_ADMIN=/Users/pchand/oracle
-export DYLD_LIBRARY_PATH="$ORACLE_HOME/lib:$DYLD_LIBRARY_PATH"
-
-
-[[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm" # Load RVM into a shell session *as a function*
-
-source ~/.profile
+# Uncomment if you want to use a local profile.
+# source ~/.profile
 
 # You may need to manually set your language environment
 # export LANG=en_US.UTF-8
