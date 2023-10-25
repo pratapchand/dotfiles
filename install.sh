@@ -2,16 +2,16 @@
 
 source include/shared_vars.sh
 
-BREWED_TOOLS=(rbenv ruby-build libpqxx grc coreutils hub tree aspell --lang=en) #tools to install via Homebrew
+BREWED_TOOLS=(python3 golang rbenv ruby-build libpqxx grc coreutils hub tree htop tmux aspell --lang=en direnv fzf highlight) #tools to install via Homebrew
 PIP_TOOLS=(virtualenvwrapper) #tools to install via pip
-RUBY_GEMS=(bundler hoe bundler foreman pg rails thin)
-CASK_TOOLS=(google-chrome seil vlc)
+RUBY_GEMS=(bundler hoe foreman rails thin tmuxinator)
+BREWED_APPS=(google-chrome vlc visual-studio-code)
 BACKUP_DIR='' #where we will backup this instance of install
 
 #install pip and friends
 install_pip()
 {
-    if test ! $(which pip)
+    if ! pip --version >/dev/null 2>&1;
     then
         echo "     [-] There is no pip. Going to install pip. This will ask for your root password."
         sudo easy_install pip
@@ -24,38 +24,44 @@ install_pip()
 install_homebrew()
 {
     #Install homebrew
-    if test ! $(which brew)
+    if ! brew --version >/dev/null 2>&1;
     then
         echo "     [-] There is no Homebrew. Going to install Homebrew."
-        ruby -e "$(curl -fsSL https://raw.github.com/mxcl/homebrew/go/install)"
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
     fi
 
     #brew me some goodness
     brew update
     brew install $BREWED_TOOLS
+    brew install --cask $BREWED_APPS
+    brew tap universal-ctags/universal-ctags
+    brew install --HEAD universal-ctags
+    brew tap burntsushi/ripgrep https://github.com/BurntSushi/ripgrep.git
+    brew install burntsushi/ripgrep/ripgrep-bin
+
+    /usr/local/opt/fzf/install --all
 }
 
 #install CASK APPS
 install_cask()
 {
     #brew me some goodness
-    brew tap caskroom/cask
-    brew cask install $CASK_TOOLS
+    brew install $CASK_TOOLS
 }
 
 #install Ruby Gems
 install_rubygems()
 {
     #Install gems
-    if test ! $(which gem)
+    if ! gem --version >/dev/null 2>&1;
     then
       echo "     [-] There is no Gem. You need to install Ruby. (brew install ruby)"
     else
       eval "$(rbenv init -)"
-      rbenv install 2.3.0
-      rbenv global 2.3.0
+      rbenv install 3.2.2
+      rbenv global 3.2.2
       gem update --system
-      gem install $RUBY_GEMS --no-rdoc --no-ri
+      gem install $RUBY_GEMS --no-document
     fi
 }
 
@@ -63,6 +69,7 @@ install_rubygems()
 install_janus()
 {
     vim_home=$HOME/.vim
+    janus_plugin_dir=$HOME/.janus
     if [ ! -d $vim_home/janus ]
     then
         curl -Lo- https://bit.ly/janus-bootstrap | sh
@@ -72,6 +79,12 @@ install_janus()
         rake default
         cd -
     fi
+
+    # install plugins
+    mkdir -p $janus_plugin_dir
+    git clone git@github.com:junegunn/fzf.vim.git $janus_plugin_dir/fzf
+    git clone git@github.com:vim-airline/vim-airline.git $janus_plugin_dir/vim-airline
+    git clone git@github.com:tpope/vim-rails.git $janus_plugin_dir/vim-rails
 }
 
 #install CLI font
@@ -83,7 +96,7 @@ install_cli_font()
 
     if [ ! -f $font_target ]
     then
-        curl -L $font_source -o $font_target
+        curl --insecure -L $font_source -o $font_target
     fi
 }
 
@@ -123,8 +136,6 @@ initialize()
     install_janus
     echo "     [+] Installing CLI font"
     install_cli_font
-    echo "     [+] Installing Cask Apps"
-    install_cask
 
     create_backup_dir
 }
