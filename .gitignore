@@ -1,0 +1,9 @@
+*-internal
+.DS_Store
+.netrwhist
+*.swp
+*~
+*.bak
+*.pyc
+.tags
+vim/vim.sl/.vim
