@@ -1,0 +1,45 @@
+# Taps
+tap "homebrew/bundle"
+
+# Core tools
+brew "stow"
+brew "zsh"
+brew "tmux"
+brew "neovim"
+brew "git"
+brew "tree"
+brew "htop"
+brew "aspell"
+brew "direnv"
+brew "universal-ctags"
+
+# Search & navigation
+brew "fzf"
+brew "ripgrep"
+brew "fd"
+brew "highlight"
+
+# Modern CLI replacements
+brew "bat"
+brew "eza"
+
+# Version management
+brew "mise"
+
+# Prompt
+brew "starship"
+
+# Languages (system installs, versions managed by mise)
+brew "python@3"
+brew "go"
+brew "node"
+brew "ruby"
+
+# Applications
+cask "google-chrome"
+cask "karabiner-elements"
+cask "vlc"
+
+# Fonts
+cask "font-inconsolata"
+cask "font-fira-code-nerd-font"

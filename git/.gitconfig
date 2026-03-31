@@ -3,7 +3,7 @@
 	email = pratapchand@gmail.com
 
 [core]
-	editor = vim
+	editor = nvim
 	whitespace = trailing-space,space-before-tab,cr-at-eol
 
 [color]

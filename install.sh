@@ -1,192 +1,99 @@
 #!/bin/zsh
-source include/shared_vars.sh
+set -e
 
-#install pip and friends
-install_pip()
-{
-    if test ! $(`which pip`)
-    then
-        echo "     [-] There is no pip. Going to install pip. This will ask for your root password."
-        sudo easy_install pip
-    fi
-}
+DOTFILES_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$DOTFILES_DIR/include/shared_vars.sh"
 
-BREWED_TOOLS=(python python3 pyenv golang rbenv ruby-build tree zsh htop tmux aspell --lang=en direnv fzf highlight)
-BREWED_APPS=(google-chrome karabiner-elements vlc) # Applications to install
-PIP_TOOLS=(virtualenvwrapper) #tools to install via pipi
-RUBY_GEMS=(bundler foreman)
-BACKUP_DIR='' # where we will backup this instance of install
-
-install_homebrew()
-{
-    if ! type "brew" &> /dev/null; then
-        echo "     [-] There is no Homebrew. Going to install Homebrew."
-        /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+# -- Homebrew --
+install_homebrew() {
+    if ! command -v brew &>/dev/null; then
+        echo "[+] Installing Homebrew..."
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     fi
 
-    brew update
-    brew upgrade
-    brew install $BREWED_TOOLS
-    brew install --cask $BREWED_APPS
-    brew tap universal-ctags/universal-ctags
-    brew install --HEAD universal-ctags
-    brew tap burntsushi/ripgrep https://github.com/BurntSushi/ripgrep.git
-    brew install burntsushi/ripgrep/ripgrep-bin
-
-    /usr/local/opt/fzf/install --all
-}
-
-# Install system-wide Ruby Gems
-install_rubygems()
-{
-    if ! type "$gem" &> /dev/null; then
-      echo "     [-] There is no Gem. You need to install Ruby. (brew install ruby)"
-    else
-      gem update --system
-      gem install $RUBY_GEMS --no-rdoc --no-ri
-    fi
-}
-
-install_zsh () {
-# Test to see if zshell is installed.  If it is:
-if [ -f /bin/zsh -o -f /usr/local/bin/zsh ]; then
-    # Clone my oh-my-zsh repository from GitHub only if it isn't already present
-    if [[ ! -d $HOME_DIR/.zsh/ ]]; then
-        git clone http://github.com/robbyrussell/oh-my-zsh.git ~/.zsh
-    fi
-    # Set the default shell to zsh if it isn't currently set to zsh
-    if [[ ! $(echo $SHELL) == $(`which zsh`) ]]; then
-        chsh -s $(`which zsh`)
-    fi
-else
-    echo "Please install zsh, then re-run this script!"
-    exit
-fi
-}
-
-# install go
-install_go_nth()
-{
-    brew update
-    brew install go --cross-compiler-common
-    export GOPATH=$HOME_DIR/go
-    go get golang.org/x/tools/cmd/godoc
-    go get github.com/golang/lint/golint
-}
-
-# install Janus
-install_janus()
-{
-    vim_home=$HOME/.vim
-    janus_plugin_dir=$HOME/.janus
-    if [ ! -d $vim_home/janus ]
-    then
-        curl -Lo- https://bit.ly/janus-bootstrap | sh
-    else
-        # There must be a better way to do this! (like make -C)
-        # bundle exec rake default -f $vim_home
-        cd $vim_home
-        rake default
-        cd -
+    # Ensure brew is on PATH for the rest of this script
+    if [ -d /opt/homebrew ]; then
+        eval "$(/opt/homebrew/bin/brew shellenv)"
+    elif [ -d /usr/local/Homebrew ]; then
+        eval "$(/usr/local/bin/brew shellenv)"
     fi
 
-    # install plugins
-    mkdir -p $janus_plugin_dir
-    git clone git@github.com:junegunn/fzf.vim.git $janus_plugin_dir/fzf
-    git clone git@github.com:vim-airline/vim-airline.git $janus_plugin_dir/vim-airline
-    git clone git@github.com:tpope/vim-rails.git $janus_plugin_dir/vim-rails
+    echo "[+] Homebrew ready"
 }
 
-install_cli_font()
-{
-    # Using Inconsolata http://www.levien.com/type/myfonts/inconsolata.html
-    font_source=http://www.levien.com/type/myfonts/Inconsolata.otf
-    font_target=$HOME_DIR/Library/Fonts/Inconsolata.otf
-
-    if [ ! -f $font_target ]
-    then
-        curl -L $font_source -o $font_target
-    fi
+# -- Brewfile --
+install_brewfile() {
+    echo "[+] Installing packages from Brewfile..."
+    brew bundle --file="$DOTFILES_DIR/brew/Brewfile" --no-lock
+    echo "[+] Packages installed"
 }
 
-create_backup_dir()
-{
-    timestamp=`date "+%Y-%h-%d-%H-%M-%S"`
-    backup_dir="$BACKUP_ROOT/$timestamp"
-    mkdir -p $backup_dir
-    if [ -d $backup_dir ]
-    then
-        BACKUP_DIR=$backup_dir
-    else
-        echo "     [x] Could not create backup directory $backup_dir"
-        return 1
-    fi
-}
-
-#create user folder
-create_folder()
-{
-    #create folder for the following
-    for f in $USER_FOLDERS; do
-        mkdir -p "$f"
+# -- User directories --
+create_user_dirs() {
+    echo "[+] Creating user directories..."
+    for dir in "${USER_FOLDERS[@]}"; do
+        mkdir -p "$dir"
     done
 }
 
-#backup a file
-backup_file()
-{
-    backup_dir=$1/
-    source_file=$2
-    mv $source_file $backup_dir
-}
+# -- Stow packages --
+stow_packages() {
+    echo "[+] Stowing dotfile packages..."
+    local skip_pattern
+    skip_pattern=$(printf "|%s" "${_DOTFILES_INFRA[@]}")
+    skip_pattern="${skip_pattern:1}"  # remove leading |
 
-# check dependencies and create backup directories
-initialize()
-{
-    echo "     [+] Installing Homebrew and friends"
-    install_homebrew
-    echo "     [+] Installing Ruby Gems"
-    install_rubygems
-    echo "     [+] Installing OMZ"
-    install_zsh
-    echo "     [+] Installing Janus for vim"
-    install_janus
-    echo "     [+] Installing CLI font"
-    install_cli_font
-    echo "     [+] Creating backup folders"
-    create_backup_dir
-    echo "     [+] Creating User folders"
-    create_folder
-}
-
-# install the dot files in $HOME_DIR
-install_dotfiles()
-{
-
-    # glob *.SYMLINK_EXT from directories and create equivalent symlinks in $HOME_DIR
-    for f in `find $PWD -name "*.$SYMLINK_EXT"`; do
-        target=$HOME_DIR/.`basename -s .$SYMLINK_EXT $f`
-
-        # if the target exists then back it up
-        if [ -e $target ]
-        then
-            backup_file $BACKUP_DIR $target
+    for pkg_dir in "$DOTFILES_DIR"/*/; do
+        pkg=$(basename "$pkg_dir")
+        # Skip infrastructure directories
+        if echo "$pkg" | grep -qE "^($skip_pattern)$"; then
+            continue
         fi
-
-       ln -fs $f $target;
+        echo "    stow: $pkg"
+        stow --dir="$DOTFILES_DIR" --target="$HOME_DIR" --restow "$pkg"
     done
+    echo "[+] All packages stowed"
 }
 
-# Unleash the dots!
-initialize
-if [ $? -eq 0 ]
-then
-    install_dotfiles
-    echo "     [+] dotfile installation complete"
-    echo "     [+] Your old dot files are backed up in $BACKUP_DIR"
-    echo "     [+] You can revert the changes with revert.sh"
-else
-    echo "     [x] There was an error initializing... will revert changes now"
-    source revert.sh
-    echo "     [x] Done."
-fi
+# -- SSH key --
+setup_ssh() {
+    if [ ! -f "$HOME_DIR/.ssh/id_ed25519" ]; then
+        echo "[+] Generating SSH key..."
+        mkdir -p "$HOME_DIR/.ssh"
+        ssh-keygen -t ed25519 -C "$(whoami)@$(hostname)" -f "$HOME_DIR/.ssh/id_ed25519"
+        echo "[+] SSH key generated. Add the public key to GitHub:"
+        cat "$HOME_DIR/.ssh/id_ed25519.pub"
+    else
+        echo "[+] SSH key already exists"
+    fi
+}
+
+# -- macOS defaults --
+configure_macos() {
+    echo "[+] Configuring macOS defaults..."
+
+    # Screenshots to ~/Desktop
+    defaults write com.apple.screencapture location -string "$HOME_DIR/Desktop"
+
+    # Show hidden files in Finder
+    defaults write com.apple.finder AppleShowAllFiles -bool true
+
+    # Fast key repeat
+    defaults write NSGlobalDomain KeyRepeat -int 2
+    defaults write NSGlobalDomain InitialKeyRepeat -int 15
+
+    # Disable press-and-hold for keys (enable key repeat)
+    defaults write NSGlobalDomain ApplePressAndHoldEnabled -bool false
+
+    echo "[+] macOS configured (some changes need logout to take effect)"
+}
+
+# -- Main --
+echo "=== dotfiles bootstrap ==="
+install_homebrew
+install_brewfile
+create_user_dirs
+stow_packages
+setup_ssh
+configure_macos
+echo "=== Done! Open a new terminal to see changes. ==="

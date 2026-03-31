@@ -6,4 +6,5 @@
 *.bak
 *.pyc
 .tags
-vim/vim.sl/.vim
+vim/.vim
+nvim/.config/nvim/lazy-lock.json
