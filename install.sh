@@ -1,192 +1,244 @@
-#!/bin/zsh
+#!/usr/bin/env zsh
+set -e
+
 source include/shared_vars.sh
 
-#install pip and friends
-install_pip()
-{
-    if test ! $(`which pip`)
-    then
-        echo "     [-] There is no pip. Going to install pip. This will ask for your root password."
-        sudo easy_install pip
-    fi
-}
-
-BREWED_TOOLS=(python python3 pyenv golang rbenv ruby-build tree zsh htop tmux aspell --lang=en direnv fzf highlight)
-BREWED_APPS=(google-chrome karabiner-elements vlc) # Applications to install
-PIP_TOOLS=(virtualenvwrapper) #tools to install via pipi
-RUBY_GEMS=(bundler foreman)
-BACKUP_DIR='' # where we will backup this instance of install
+INSTALL_SCRIPT_AT="${0:a:h}"
 
 install_homebrew()
 {
-    if ! type "brew" &> /dev/null; then
+    if ! command -v brew &> /dev/null; then
         echo "     [-] There is no Homebrew. Going to install Homebrew."
-        /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+        # Determine the correct Homebrew path based on architecture
+        if [[ $(uname -m) == "arm64" ]]; then
+            # M1/M2 Mac
+            BREW_PATH="/opt/homebrew/bin/brew"
+        else
+            # Intel Mac
+            BREW_PATH="/usr/local/bin/brew"
+        fi
+
+        # Check if Homebrew was installed and set the PATH for this session
+        if [[ -f "$BREW_PATH" ]]; then
+            echo "     [-] Homebrew installed. Initializing Homebrew in current shell..."
+            eval "$($BREW_PATH shellenv)"
+        else
+            echo "     [x] Homebrew installation may have failed. Brew executable not found."
+            return 1
+        fi
     fi
 
-    brew update
-    brew upgrade
-    brew install $BREWED_TOOLS
-    brew install --cask $BREWED_APPS
-    brew tap universal-ctags/universal-ctags
-    brew install --HEAD universal-ctags
-    brew tap burntsushi/ripgrep https://github.com/BurntSushi/ripgrep.git
-    brew install burntsushi/ripgrep/ripgrep-bin
+    local BREWFILE_PATH="${INSTALL_SCRIPT_AT}/brew/Brewfile"
+    # Verify Brewfile exists and is readable
+    if [[ ! -f "$BREWFILE_PATH" ]]; then
+        echo "Error: Brewfile not found at ${BREWFILE_PATH}" >&2
+        exit 1
+    fi
 
-    /usr/local/opt/fzf/install --all
-}
+    if [[ ! -r "$BREWFILE_PATH" ]]; then
+        echo "Error: Cannot read Brewfile at ${BREWFILE_PATH}" >&2
+        echo "Please check file permissions" >&2
+        exit 1
+    fi
 
-# Install system-wide Ruby Gems
-install_rubygems()
-{
-    if ! type "$gem" &> /dev/null; then
-      echo "     [-] There is no Gem. You need to install Ruby. (brew install ruby)"
+    # Install Homebrew packages
+    echo "Installing packages from Brewfile..."
+    if brew bundle --file="$BREWFILE_PATH"; then
+        echo "Homebrew packages installed successfully!"
+        brew bundle --file="$BREWFILE_PATH" cleanup --force
+        brew doctor || echo "brew doctor found some warnings (usually harmless)"
+        return 0
     else
-      gem update --system
-      gem install $RUBY_GEMS --no-rdoc --no-ri
-    fi
-}
-
-install_zsh () {
-# Test to see if zshell is installed.  If it is:
-if [ -f /bin/zsh -o -f /usr/local/bin/zsh ]; then
-    # Clone my oh-my-zsh repository from GitHub only if it isn't already present
-    if [[ ! -d $HOME_DIR/.zsh/ ]]; then
-        git clone http://github.com/robbyrussell/oh-my-zsh.git ~/.zsh
-    fi
-    # Set the default shell to zsh if it isn't currently set to zsh
-    if [[ ! $(echo $SHELL) == $(`which zsh`) ]]; then
-        chsh -s $(`which zsh`)
-    fi
-else
-    echo "Please install zsh, then re-run this script!"
-    exit
-fi
-}
-
-# install go
-install_go_nth()
-{
-    brew update
-    brew install go --cross-compiler-common
-    export GOPATH=$HOME_DIR/go
-    go get golang.org/x/tools/cmd/godoc
-    go get github.com/golang/lint/golint
-}
-
-# install Janus
-install_janus()
-{
-    vim_home=$HOME/.vim
-    janus_plugin_dir=$HOME/.janus
-    if [ ! -d $vim_home/janus ]
-    then
-        curl -Lo- https://bit.ly/janus-bootstrap | sh
-    else
-        # There must be a better way to do this! (like make -C)
-        # bundle exec rake default -f $vim_home
-        cd $vim_home
-        rake default
-        cd -
-    fi
-
-    # install plugins
-    mkdir -p $janus_plugin_dir
-    git clone git@github.com:junegunn/fzf.vim.git $janus_plugin_dir/fzf
-    git clone git@github.com:vim-airline/vim-airline.git $janus_plugin_dir/vim-airline
-    git clone git@github.com:tpope/vim-rails.git $janus_plugin_dir/vim-rails
-}
-
-install_cli_font()
-{
-    # Using Inconsolata http://www.levien.com/type/myfonts/inconsolata.html
-    font_source=http://www.levien.com/type/myfonts/Inconsolata.otf
-    font_target=$HOME_DIR/Library/Fonts/Inconsolata.otf
-
-    if [ ! -f $font_target ]
-    then
-        curl -L $font_source -o $font_target
-    fi
-}
-
-create_backup_dir()
-{
-    timestamp=`date "+%Y-%h-%d-%H-%M-%S"`
-    backup_dir="$BACKUP_ROOT/$timestamp"
-    mkdir -p $backup_dir
-    if [ -d $backup_dir ]
-    then
-        BACKUP_DIR=$backup_dir
-    else
-        echo "     [x] Could not create backup directory $backup_dir"
+        echo "Some Homebrew installations may have failed. Please check the output above."
         return 1
     fi
-}
-
-#create user folder
-create_folder()
-{
-    #create folder for the following
-    for f in $USER_FOLDERS; do
-        mkdir -p "$f"
-    done
-}
-
-#backup a file
-backup_file()
-{
-    backup_dir=$1/
-    source_file=$2
-    mv $source_file $backup_dir
-}
-
-# check dependencies and create backup directories
-initialize()
-{
-    echo "     [+] Installing Homebrew and friends"
-    install_homebrew
-    echo "     [+] Installing Ruby Gems"
-    install_rubygems
-    echo "     [+] Installing OMZ"
-    install_zsh
-    echo "     [+] Installing Janus for vim"
-    install_janus
-    echo "     [+] Installing CLI font"
-    install_cli_font
-    echo "     [+] Creating backup folders"
-    create_backup_dir
-    echo "     [+] Creating User folders"
-    create_folder
 }
 
 # install the dot files in $HOME_DIR
 install_dotfiles()
 {
+    echo "Setting up dotfiles with stow..."
 
-    # glob *.SYMLINK_EXT from directories and create equivalent symlinks in $HOME_DIR
-    for f in `find $PWD -name "*.$SYMLINK_EXT"`; do
-        target=$HOME_DIR/.`basename -s .$SYMLINK_EXT $f`
+    local dev_dir="$PROJECT_DIR"
+    if [[ ! -d "$dev_dir" ]]; then
+    echo "Creating dev directory for projects..."
+    mkdir -p "$dev_dir"
+  fi
 
-        # if the target exists then back it up
-        if [ -e $target ]
-        then
-            backup_file $BACKUP_DIR $target
-        fi
+  # Check if stow is installed
+  if ! command -v stow &> /dev/null; then
+    echo "Error: stow is not installed"
+    echo "Installing stow with Homebrew..."
+    brew install stow
+  fi
 
-       ln -fs $f $target;
+  # Change to the dotfiles directory (required for stow to work correctly)
+  cd "$INSTALL_SCRIPT_AT"
+
+  # Auto-discover stow packages: every top-level directory that isn't
+  # hidden or part of the dotfiles infrastructure (include/, lib/, etc.)
+  local packages=()
+  for dir in */; do
+    local dirname="${dir%/}"
+    [[ "$dirname" == .* ]] && continue
+    # Skip infrastructure directories
+    local is_infra=false
+    for infra in "${_DOTFILES_INFRA[@]}"; do
+      [[ "$dirname" == "$infra" ]] && { is_infra=true; break; }
     done
+    $is_infra && continue
+    packages+=("$dirname")
+  done
+
+  echo "Discovered stow packages: ${packages[*]}"
+
+  # Stow each package
+  for package in "${packages[@]}"; do
+    echo "Stowing $package..."
+    stow --verbose --adopt --target="$HOME_DIR" --restow "$package"
+    if [[ $? -eq 0 ]]; then
+      echo "$package linked successfully"
+    else
+      echo "Failed to stow $package"
+    fi
+  done
+
+  return 0
+}
+
+install_native_tools() {
+    echo "==> Claude Code"
+    curl -fsSL https://claude.ai/install.sh | bash
+}
+
+# Make mise tasks executable (TODO: leaky abstraction...)
+fix_mise_permissions() {
+    local tasks_dir="$HOME_DIR/.config/mise/tasks"
+    if [[ -d "$tasks_dir" ]]; then
+        find "$tasks_dir" -type f -exec chmod +x {} \;
+        echo "Made all mise tasks executable"
+    fi
+}
+
+# ssh keys for GitHub
+generate_ssh_keys() {
+  echo "Setting up SSH keys for GitHub..."
+
+  # Default location for SSH keys
+  local ssh_dir="$HOME_DIR/.ssh"
+  local key_file="$ssh_dir/id_ed25519"
+  local pub_file="$key_file.pub"
+
+  # Create SSH directory if it doesn't exist
+  if [[ ! -d "$ssh_dir" ]]; then
+    echo "Creating SSH directory..."
+    mkdir -p "$ssh_dir"
+    chmod 700 "$ssh_dir"
+  fi
+
+  # Check if keys already exist
+  if [[ -f "$key_file" ]]; then
+    echo "SSH key already exists at $key_file"
+    read -q "REPLY?Do you want to generate a new key anyway? (y/n) " || true
+    echo ""
+    if [[ $REPLY =~ ^[Nn]$ ]]; then
+      echo "Keeping existing SSH key."
+      return 0
+    fi
+    # Backup existing key
+    local backup_key="$key_file.backup-$(date +%Y%m%d%H%M%S)"
+    echo "Backing up existing SSH key to $backup_key"
+    cp "$key_file" "$backup_key"
+    cp "$pub_file" "$backup_key.pub"
+  fi
+
+  # Get user input for key
+  echo "Generating new SSH key for GitHub..."
+  read "email?Enter your GitHub email: "
+
+  # Generate the key
+  ssh-keygen -t ed25519 -C "$email" -f "$key_file"
+
+  # Start ssh-agent and add the key
+  eval "$(ssh-agent -s)"
+  ssh-add "$key_file"
+
+  # Copy public key to clipboard
+  if command -v pbcopy &> /dev/null; then
+    # macOS
+    pbcopy < "$pub_file"
+    echo "Public key copied to clipboard!"
+  else
+    echo "Your public key is:"
+    cat "$pub_file"
+    echo "Please copy it manually."
+  fi
+
+  # Ask user to add key to GitHub
+  echo ""
+  echo "Please add this key to your GitHub account:"
+  echo "1. Go to GitHub.com -> Settings -> SSH and GPG keys -> New SSH key"
+  echo "2. Paste the key (it's already in your clipboard on macOS)"
+  echo "3. Give it a title (e.g., $(hostname))"
+  echo ""
+  read -q "REPLY?Press Y when you've added the key to GitHub (y/n) " || true
+  echo ""
+
+  if [[ $REPLY =~ ^[Yy]$ ]]; then
+    # Test the connection
+    echo "Testing GitHub SSH connection..."
+    if ssh -T git@github.com -o StrictHostKeyChecking=accept-new; then
+      echo "SSH connection to GitHub successful!"
+    else
+      echo "SSH connection test returned a non-zero exit code."
+      echo "   This may be normal if GitHub printed the welcome message."
+      echo "   If you're unsure, please check your SSH connection manually."
+    fi
+  else
+    echo "Skipping GitHub connection test."
+  fi
+
+  # Set git config if email was provided
+  if [[ -n "$email" ]]; then
+    echo "Would you like to set this email in your git config? (y/n)"
+    read -q "REPLY?" || true
+    echo ""
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+      read "name?Enter your name for git config: "
+      git config --global user.email "$email"
+      git config --global user.name "$name"
+      echo "Git config updated with your name and email!"
+    fi
+  fi
+
+  echo "SSH key setup complete!"
+  return 0
+}
+
+customize_macos() {
+    local screenshot_dir="~/Pictures/Screenshots"
+    if [[ ! -d "$screenshot_dir" ]]; then
+        echo "Creating Screenshot directory for projects..."
+        mkdir -p "$screenshot_dir"
+    fi
+    defaults write com.apple.screencapture location "$screenshot_dir"
 }
 
 # Unleash the dots!
-initialize
-if [ $? -eq 0 ]
-then
+echo "Installing Homebrew..."
+install_homebrew
+exit_code=$?
+echo "Homebrew installation exit code: $exit_code"
+if [ $exit_code -eq 0 ]; then
     install_dotfiles
+    fix_mise_permissions
     echo "     [+] dotfile installation complete"
-    echo "     [+] Your old dot files are backed up in $BACKUP_DIR"
-    echo "     [+] You can revert the changes with revert.sh"
+    generate_ssh_keys
+    customize_macos
+    install_native_tools
+    echo "     [+] All Done."
 else
-    echo "     [x] There was an error initializing... will revert changes now"
-    source revert.sh
-    echo "     [x] Done."
+    echo "     [x] There was an error installing Homebrew!"
 fi
