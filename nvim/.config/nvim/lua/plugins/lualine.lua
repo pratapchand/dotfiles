@@ -1,20 +1,23 @@
-return {
-  "nvim-lualine/lualine.nvim",
-  dependencies = { "nvim-tree/nvim-web-devicons" },
-  event = "VeryLazy",
-  opts = {
-    options = {
-      theme = "tokyonight",
-      component_separators = { left = "|", right = "|" },
-      section_separators = { left = "", right = "" },
-    },
-    sections = {
-      lualine_a = { "mode" },
-      lualine_b = { "branch", "diff", "diagnostics" },
-      lualine_c = { { "filename", path = 1 } },
-      lualine_x = { "encoding", "fileformat", "filetype" },
-      lualine_y = { "progress" },
-      lualine_z = { "location" },
-    },
+local Plugin = {'nvim-lualine/lualine.nvim'}
+
+Plugin.event = 'VeryLazy'
+
+-- See :help lualine.txt
+Plugin.opts = {
+  options = {
+    theme = 'tokyonight',
+    icons_enabled = true,
+    component_separators = '|',
+    section_separators = '',
+    disabled_filetypes = {
+      statusline = {'NvimTree'}
+    }
   },
 }
+
+function Plugin.init()
+  vim.opt.showmode = false
+end
+
+return Plugin
+

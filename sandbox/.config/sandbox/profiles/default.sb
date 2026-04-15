@@ -1,0 +1,110 @@
+(version 1)
+
+;; =============================================================================
+;; Sandbox profile for coding agents - PROJECT SCOPED
+;; =============================================================================
+;;
+;; Philosophy: Agents can READ broadly but WRITE only to project + tool state.
+;; Prevents: global installs, home dir modifications, secret access
+;;
+;; NOTE: Setuid binaries (ps, top, sudo, su, etc.) blocked by macOS kernel.
+;; Use alternatives: pgrep (for ps), htop (for top)
+;;
+;; Parameters passed via sandbox-exec -D:
+;;   HOME        - user home directory
+;;   PROJECT_DIR - current project directory
+;;   SSH_REAL    - real path to ~/.ssh (resolving symlinks)
+
+;; =============================================================================
+;; PARAMETERS
+;; =============================================================================
+
+(define HOME (param "HOME"))
+(define PROJECT_DIR (param "PROJECT_DIR"))
+(define SSH_REAL (param "SSH_REAL"))
+
+;; =============================================================================
+;; FILE READS
+;; =============================================================================
+
+;; Allow reading everything by default
+(allow file-read* (subpath "/"))
+
+;; Deny regular files under SSH_REAL (allows directory traversal)
+(deny file-read*
+    (require-all
+        (subpath SSH_REAL)
+        (vnode-type REGULAR-FILE)))
+
+;; Allow back specific SSH files needed for git
+(allow file-read* (literal (string-append SSH_REAL "/known_hosts")))
+(allow file-read* (literal (string-append SSH_REAL "/config")))
+
+;; Allow public keys (explicit list since regex in require-all doesn't work)
+(allow file-read* (literal (string-append SSH_REAL "/id_rsa.pub")))
+(allow file-read* (literal (string-append SSH_REAL "/id_ed25519.pub")))
+(allow file-read* (literal (string-append SSH_REAL "/id_ecdsa.pub")))
+(allow file-read* (literal (string-append SSH_REAL "/id_dsa.pub")))
+
+;; Deny other secrets
+(deny file-read* (subpath (string-append HOME "/.aws")))
+(deny file-read* (literal (string-append HOME "/.netrc")))
+(deny file-read* (subpath (string-append HOME "/.gnupg/private-keys-v1.d")))
+;; Allowing keychain reads - needed for git credential-osxkeychain helper.
+;; Blocking this causes a confusing macOS "Keychain Not Found" dialog on startup.
+;; (deny file-read* (subpath (string-append HOME "/Library/Keychains")))
+(deny file-read* (subpath (string-append HOME "/Library/Application Support/Google/Chrome")))
+(deny file-read* (subpath (string-append HOME "/Library/Application Support/Firefox")))
+(deny file-read* (subpath (string-append HOME "/Library/Safari")))
+
+;; =============================================================================
+;; FILE WRITES - Allow specific locations, deny dangerous ones
+;; =============================================================================
+
+;; Allow writes to project and tool directories
+(allow file-write* (subpath PROJECT_DIR))                                    ; project directory
+(allow file-write* (subpath (string-append HOME "/.cache")))                 ; cache
+(allow file-write* (subpath (string-append HOME "/.config")))                ; app configs
+(allow file-write* (subpath (string-append HOME "/.local")))                 ; local data/state
+(allow file-write* (subpath (string-append HOME "/.claude")))                ; claude (symlink)
+(allow file-write* (subpath (string-append HOME "/.dotfiles")))              ; dotfiles (real paths)
+(allow file-write* (subpath (string-append HOME "/.codex")))                 ; codex
+(allow file-write* (subpath (string-append HOME "/.opencode")))              ; opencode
+(allow file-write* (subpath (string-append HOME "/.npm")))                   ; npm cache
+(allow file-write* (subpath (string-append HOME "/.pnpm")))                  ; pnpm
+(allow file-write* (literal (string-append HOME "/.zsh_history")))           ; shell history
+(allow file-write* (literal (string-append HOME "/.zsh_history.LOCK")))
+(allow file-write* (literal (string-append HOME "/.zsh_history.new")))
+(allow file-write* (subpath "/tmp"))                                         ; temp
+(allow file-write* (subpath "/private/tmp"))                                 ; temp
+(allow file-write* (subpath "/dev"))                                         ; devices
+
+;; Block dangerous writes (shell configs, keys, credentials)
+;; Note: symlinks resolve to real paths, so block both symlink and real locations
+(deny file-write* (literal (string-append HOME "/.zshrc")))
+(deny file-write* (literal (string-append HOME "/.zshenv")))
+(deny file-write* (literal (string-append HOME "/.bashrc")))
+(deny file-write* (literal (string-append HOME "/.bash_profile")))
+(deny file-write* (literal (string-append HOME "/.profile")))
+(deny file-write* (literal (string-append HOME "/.gitconfig")))
+(deny file-write* (subpath (string-append HOME "/.ssh")))                    ; SSH keys (symlink)
+(deny file-write* (subpath (string-append HOME "/.dotfiles/ssh")))           ; SSH keys (real)
+(deny file-write* (subpath (string-append HOME "/.dotfiles/zsh")))           ; shell configs (real)
+(deny file-write* (subpath (string-append HOME "/.dotfiles/git")))           ; git config (real)
+(deny file-write* (subpath (string-append HOME "/.gnupg")))                  ; GPG keys
+(deny file-write* (subpath (string-append HOME "/.aws")))                    ; AWS creds
+
+;; Block system directory writes
+(deny file-write* (subpath "/System"))
+(deny file-write* (subpath "/usr"))
+(deny file-write* (subpath "/bin"))
+(deny file-write* (subpath "/sbin"))
+(deny file-write* (subpath "/Library"))
+(deny file-write* (subpath "/Applications"))
+(deny file-write* (subpath "/opt/homebrew"))
+
+;; =============================================================================
+;; EVERYTHING ELSE - Allow by default
+;; =============================================================================
+
+(allow default)

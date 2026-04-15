@@ -4,6 +4,7 @@
 
 [core]
 	editor = nvim
+	pager = delta
 	whitespace = trailing-space,space-before-tab,cr-at-eol
 
 [color]
@@ -27,3 +28,20 @@
         helper = osxkeychain
 [init]
 	templatedir = ~/.git_template
+	defaultBranch = main
+
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+
+[interactive]
+    diffFilter = delta --color-only
+
+[delta]
+    navigate = true  # use n and N to move between diff sections
+    dark = true      # or light = true, or omit for auto-detection
+
+[merge]
+    conflictstyle = zdiff3

@@ -1,7 +1,9 @@
-#!/bin/sh
+#!/usr/bin/env zsh
 
-HOME_DIR=$HOME
-USER_FOLDERS=("$HOME_DIR/dev" "$HOME_DIR/go")
+# Shared variables between install.sh, .zshenv, and misewrapper.sh
+HOME_DIR=$HOME # Makes it easy to test
+PROJECT_DIR="$HOME_DIR/dev"
 
-# Directories that are NOT stow packages (skipped by stow_packages)
-_DOTFILES_INFRA=(include lib brew go vim .claude .git .github)
+# Directories that are part of the dotfiles infrastructure, NOT stow packages.
+# Everything else at the top level is auto-discovered as a stow package.
+_DOTFILES_INFRA=("include" "lib" "docs" "tests" "tmp")

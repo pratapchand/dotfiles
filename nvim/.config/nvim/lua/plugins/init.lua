@@ -1,26 +1,14 @@
-return {
-  -- Colorscheme
-  {
-    "folke/tokyonight.nvim",
-    lazy = false,
-    priority = 1000,
-  },
+-- Note: this is where you can add plugins that don't require any configuration.
+-- as soon as you need to add options to a plugin consider making a dedicated file.
 
-  -- Mini.nvim (surround, pairs, comment)
-  {
-    "echasnovski/mini.nvim",
-    version = false,
-    config = function()
-      require("mini.surround").setup()
-      require("mini.pairs").setup()
-      require("mini.comment").setup()
-    end,
-  },
+local Plugins = {
+  {'tpope/vim-repeat'},
+  {'tpope/vim-fugitive'},
+  {'stevearc/dressing.nvim', opts = {}},
+  {'nvim-tree/nvim-web-devicons', lazy = true},
 
-  -- Which-key (keybinding hints)
-  {
-    "folke/which-key.nvim",
-    event = "VeryLazy",
-    opts = {},
-  },
+  -- colorscheme
+  {'folke/tokyonight.nvim'},
 }
+
+return Plugins

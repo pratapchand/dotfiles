@@ -1,55 +1,25 @@
-local opt = vim.opt
+-- You can read the description of each option in the help page
+-- use :help 'option_name' command
+-- For example, :help 'hlsearch'
 
--- Line numbers
-opt.number = true
-opt.relativenumber = true
-opt.ruler = true
+vim.opt.number = true
+vim.opt.cursorline = true
+vim.opt.mouse = 'a'
+vim.opt.ignorecase = true
+vim.opt.smartcase = true
+vim.opt.hlsearch = false
+vim.opt.wrap = false
+vim.opt.tabstop = 2
+vim.opt.shiftwidth = 2
+vim.opt.expandtab = false
+vim.opt.signcolumn = 'yes'
+vim.opt.termguicolors = true
 
--- Tabs & indentation (matching previous vim config)
-opt.tabstop = 4
-opt.shiftwidth = 4
-opt.softtabstop = 4
-opt.expandtab = true
-opt.smartindent = true
-
--- Line width
-opt.textwidth = 120
-opt.colorcolumn = "120"
-
--- Search
-opt.hlsearch = true
-opt.incsearch = true
-opt.ignorecase = true
-opt.smartcase = true
-
--- Appearance
-opt.termguicolors = true
-opt.signcolumn = "yes"
-opt.cursorline = true
-opt.scrolloff = 8
-
--- File handling
-opt.fileformat = "unix"
-opt.backup = false
-opt.swapfile = false
-opt.undofile = true
-
--- Folding
-opt.foldmethod = "indent"
-opt.foldnestmax = 10
-opt.foldenable = false
-opt.foldlevel = 1
-
--- Misc
-opt.backspace = { "indent", "eol", "start" }
-opt.clipboard = "unnamedplus"
-opt.mouse = "a"
-opt.splitbelow = true
-opt.splitright = true
-opt.updatetime = 250
-
--- Tags
-opt.tags = "./.tags,.tags"
-
--- Shell
-opt.shell = "zsh"
+-- Text wrapping and display settings
+vim.opt.textwidth = 80
+vim.opt.wrap = true
+vim.opt.linebreak = true
+vim.opt.showbreak = "↪ "  -- Show a symbol at the beginning of wrapped lines
+vim.opt.list = true
+vim.opt.listchars = "tab:→ ,eol:↲,trail:·,extends:»,precedes:«"  -- Show whitespace
+vim.cmd([[highlight ColorColumn ctermbg=238 guibg=#444444]])

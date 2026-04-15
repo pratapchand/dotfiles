@@ -1,27 +1,34 @@
 # Taps
-tap "homebrew/bundle"
+tap "kulesh/tap"
+tap "jnsahaj/lumen"
 
 # Core tools
+brew "coreutils"
 brew "stow"
 brew "zsh"
-brew "tmux"
 brew "neovim"
 brew "git"
+brew "gh"
 brew "tree"
 brew "htop"
 brew "aspell"
-brew "direnv"
 brew "universal-ctags"
+brew "mas"
 
 # Search & navigation
 brew "fzf"
 brew "ripgrep"
 brew "fd"
 brew "highlight"
+brew "zoxide"
+brew "yazi"
 
 # Modern CLI replacements
 brew "bat"
 brew "eza"
+brew "git-delta"
+brew "lazygit"
+brew "hyperfine"
 
 # Version management
 brew "mise"
@@ -35,11 +42,39 @@ brew "go"
 brew "node"
 brew "ruby"
 
+# Containers
+brew "docker"
+brew "docker-compose"
+brew "colima"
+
+# Documentation & media
+brew "pandoc"
+brew "glow"
+brew "mdcat"
+brew "ollama"
+brew "yt-dlp"
+
+# Testing
+brew "bats-core"
+brew "tree-sitter"
+
+# Custom taps
+brew "kulesh/tap/tc"
+brew "kulesh/tap/aiobscura"
+brew "kulesh/tap/seatbelt"
+brew "jnsahaj/lumen/lumen"
+brew "mole"
+
 # Applications
 cask "google-chrome"
-cask "karabiner-elements"
 cask "vlc"
+cask "ghostty"
+cask "obsidian"
+cask "rectangle"
 
 # Fonts
 cask "font-inconsolata"
 cask "font-fira-code-nerd-font"
+cask "font-jetbrains-mono-nerd-font"
+cask "font-hack-nerd-font"
+cask "font-zed-mono-nerd-font"

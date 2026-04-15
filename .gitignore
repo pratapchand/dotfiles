@@ -1,4 +1,10 @@
 *-internal
+*keys*
+lazy-lock.json
+
+ssh/.ssh/*
+!ssh/.ssh/config
+
 .DS_Store
 .netrwhist
 *.swp
@@ -7,4 +13,4 @@
 *.pyc
 .tags
 vim/.vim
-nvim/.config/nvim/lazy-lock.json
+AGENTS.md
