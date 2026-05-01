@@ -113,12 +113,15 @@ install_native_tools() {
     curl -fsSL https://claude.ai/install.sh | bash
 }
 
-# Make mise tasks executable (TODO: leaky abstraction...)
+# Make mise tasks executable. Scoped to *.sh so sibling files in the tasks
+# tree (e.g. CLAUDE.project.md, AGENTS.project.md template content) don't
+# get spurious +x bits — which also stops them from showing up as phantom
+# entries in `mise tasks ls`.
 fix_mise_permissions() {
     local tasks_dir="$HOME_DIR/.config/mise/tasks"
     if [[ -d "$tasks_dir" ]]; then
-        find "$tasks_dir" -type f -exec chmod +x {} \;
-        echo "Made all mise tasks executable"
+        find "$tasks_dir" -type f -name '*.sh' -exec chmod +x {} \;
+        echo "Made mise task scripts executable"
     fi
 }
 
