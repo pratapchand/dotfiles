@@ -44,7 +44,11 @@ for file in ${(M)config_files:#*/path.zsh}; do
 done
 
 # FZF
-source <(fzf --zsh) 2>/dev/null || [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+if (( $+commands[fzf] )); then
+    source <(fzf --zsh)
+elif [ -f ~/.fzf.zsh ]; then
+    source ~/.fzf.zsh
+fi
 export FZF_DEFAULT_OPTS='--height 50% --reverse --border --inline-info'
 export FZF_DEFAULT_COMMAND='fd --type f'
 export FZF_COMPLETION_TRIGGER='~~'
