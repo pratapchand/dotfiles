@@ -1,0 +1,21 @@
+# Plugin shorthands — give a short name to a plugin mise cannot find on its own.
+#
+# Every ~/.config/mise/conf.d/*.toml is merged into the global config automatically,
+# so this file needs no wiring. It replaces the `shorthands_file` setting, which mise
+# deprecated in 2026.7 and removes in 2026.12.0.
+#
+# Two rules keep this file honest:
+#
+#   1. Entries must be asdf/vfox PLUGIN REPOS, not backend strings. Despite the
+#      "backend-or-url" wording in mise's own deprecation notice, values resolve
+#      through the asdf plugin path — `npm:convex` fails here, a git URL works.
+#
+#   2. Only add a tool that `mise registry <tool>` cannot already find. The registry
+#      covers ~everything; a shorthand that shadows it usually swaps a fast prebuilt
+#      aqua backend for a slower asdf plugin.
+#
+# Tools published to a package registry need nothing here — name the backend directly,
+# e.g. `"npm:convex" = "latest"` under [tools].
+
+[plugins]
+# bats = "https://github.com/timgluz/asdf-bats.git"
